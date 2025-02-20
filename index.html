@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orillusion GLB Viewer</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+    <!-- Load Orillusion using CDN -->
+    <script src="https://unpkg.com/@orillusion/core/dist/orillusion.umd.js"></script>
+</head>
+<body>
+    <script>
+        const { Engine3D, Scene3D, Object3D, Camera3D, DirectLight, HoverCameraController, Color, View3D, AtmosphericComponent } = Orillusion;
+
+        let globalScene; // Global variable for the scene
+        let baseModel;   // Store the currently displayed model
+
+        async function Init_Scene() {
+            await Engine3D.init();
+            globalScene = new Scene3D();
+
+            // Create sky atmosphere.
+            let sky = globalScene.addComponent(AtmosphericComponent);
+            sky.sunY = 0.6;
+
+            // Create camera and adjust its view.
+            let cameraObj = new Object3D();
+            let camera = cameraObj.addComponent(Camera3D);
+            camera.perspective(60, Engine3D.aspect, 1, 5000.0);
+            globalScene.addChild(cameraObj);
+
+            // Set camera controller.
+            let controller = cameraObj.addComponent(HoverCameraController);
+            controller.setCamera(0, -20, 15);
+
+            // Create light and adjust its properties.
+            let light = new Object3D();
+            let component = light.addComponent(DirectLight);
+            light.rotationX = 45;
+            light.rotationY = 30;
+            component.lightColor = new Color(1.0, 1.0, 1.0, 1.0);
+            component.intensity = 1;
+            globalScene.addChild(light);
+
+            // Load base model.
+            baseModel = await Engine3D.res.loadGltf('https://cdn.orillusion.com/PBR/DragonAttenuation/DragonAttenuation.gltf');
+            globalScene.addChild(baseModel);
+
+            // Create a view with target scene and camera.
+            let view = new View3D();
+            view.scene = globalScene;
+            view.camera = camera;
+
+            // Start render.
+            Engine3D.startRenderView(view);
+        }
+
+        Init_Scene();
+
+        function ChangeModel(url) 
+        {
+            if (baseModel) 
+            {
+                globalScene.removeChild(baseModel);
+            }
+            Engine3D.res.loadGltf(url)
+                .then((newModel) => 
+                {
+                    baseModel = newModel;
+                    globalScene.addChild(baseModel);
+                })
+
+                .catch(err => 
+                {
+                    console.error("Error loading new model:", err);
+                }); 
+        }
+
+        setTimeout(() => { ChangeModel('./DamagedHelmet.glb');}, 5000);
+    </script>
+</body>
+</html>
